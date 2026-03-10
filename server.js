@@ -22,7 +22,7 @@ function fetchThesaurus(word) {
     // ml = "means like" (synonyms), rel_syn = related synonyms
     const endpoints = [
       `https://api.datamuse.com/words?rel_syn=${encodeURIComponent(word)}&md=p&max=1000`,
-      `https://api.datamuse.com/words?ml=${encodeURIComponent(word)}&md=p&max=1000`
+      //`https://api.datamuse.com/words?ml=${encodeURIComponent(word)}&md=p&max=1000`
     ];
 
     choices.add(word);
@@ -51,12 +51,9 @@ function fetchThesaurus(word) {
 }
 
 function dedupeAndEnrich(words, originalWord) {
-  const seen = new Set([originalWord.toLowerCase()]);
-
   const wordsUpdated = words
     .filter(w => {
-      if (!w.word || choices.has(w.word.toLowerCase())) return false;
-      //seen.add(w.word.toLowerCase());
+      if (!w.word || choices.has(w.word.toLowerCase()) || w.word.includes(" ")) return false;
       return true;
     })
     .sort((a, b) => (b.score || 0) - (a.score || 0))
@@ -67,8 +64,8 @@ function dedupeAndEnrich(words, originalWord) {
       tags: w.tags || []
     }));
 
-    console.log(seen);
-
+    console.log(wordsUpdated);
+    
     return wordsUpdated;
 }
 
