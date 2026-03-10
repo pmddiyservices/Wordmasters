@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Masters — Thesaurus Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Exo+2:wght@400;600;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Word Masters palette — royal purple, blazing gold, electric blue */
+    --bg:        #12063a;
+    --surface:   #1a0e4a;
+    --border:    #2e1d6e;
+    --text:      #e8e4ff;
+    --muted:     #7a6aaa;
+    --accent:    #f5c842;       /* gold  */
+    --accent2:   #4ea8ff;       /* blue  */
+    --purple-mid:#5533bb;
+
+    /* Word-type colours — vivid on dark purple */
+    --col-noun:     #4ea8ff;   /* electric blue  */
+    --col-verb:     #5cf5a0;   /* bright green   */
+    --col-adj:      #f5c842;   /* gold           */
+    --col-adv:      #d97bff;   /* violet         */
+    --col-vowel:    #ff8c42;   /* fiery orange   */
+    --col-unknown:  #9988cc;   /* lavender grey  */
+
+    --radius: 12px;
+    --node-w: 130px;
+    --node-h: 52px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% 100%, rgba(85,51,187,0.35) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 50% 60%, rgba(245,200,66,0.06) 0%, transparent 60%);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2.2rem;
+    border-bottom: 2px solid var(--border);
+    background: linear-gradient(180deg, #1e0f55 0%, #160b40 100%);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+
+  .logo {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+  }
+  .logo-word {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.7rem;
+    letter-spacing: 0.06em;
+    background: linear-gradient(135deg, #ffe066 0%, #f5c842 40%, #e8a020 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(0 2px 6px rgba(245,200,66,0.5));
+  }
+  .logo-masters {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.05rem;
+    letter-spacing: 0.14em;
+    background: linear-gradient(135deg, #82ccff 0%, #4ea8ff 60%, #2277dd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 1px 4px rgba(78,168,255,0.6));
+    margin-top: -4px;
+  }
+  .logo-tagline {
+    font-family: 'Exo 2', sans-serif;
+    font-size: .6rem;
+    letter-spacing: .18em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+
+  /* ── Search bar ── */
+  .search-wrap {
+    display: flex;
+    gap: .6rem;
+    align-items: center;
+  }
+
+  #searchInput {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-size: .95rem;
+    padding: .55rem 1rem;
+    width: 240px;
+    outline: none;
+    transition: border-color .2s, background .2s;
+  }
+  #searchInput:focus {
+    border-color: var(--accent);
+    background: rgba(245,200,66,0.07);
+  }
+  #searchInput::placeholder { color: var(--muted); }
+
+  #searchBtn {
+    background: linear-gradient(135deg, #ffe066 0%, #f5a800 100%);
+    border: none;
+    border-radius: var(--radius);
+    color: #1a0e4a;
+    cursor: pointer;
+    font-family: 'Exo 2', sans-serif;
+    font-size: .88rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    padding: .55rem 1.3rem;
+    transition: opacity .15s, transform .1s, box-shadow .15s;
+    box-shadow: 0 2px 12px rgba(245,168,0,0.4);
+  }
+  #searchBtn:hover {
+    opacity: .9;
+    box-shadow: 0 4px 20px rgba(245,168,0,0.6);
+  }
+  #searchBtn:active { transform: scale(.97); }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    gap: 1.2rem;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: .6rem 2.2rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(26,14,74,0.85);
+    font-size: .72rem;
+    color: var(--muted);
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px currentColor;
+  }
+
+  /* ── Canvas area ── */
+  #stage {
+    position: relative;
+    width: 100%;
+    min-height: calc(100vh - 120px);
+    overflow: auto;
+  }
+
+  svg#connections {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Nodes ── */
+  .node {
+    position: absolute;
+    width: var(--node-w);
+    height: var(--node-h);
+    border-radius: var(--radius);
+    border: 2px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    z-index: 10;
+    transition: transform .18s cubic-bezier(.34,1.56,.64,1),
+                box-shadow .18s ease,
+                border-color .18s;
+    animation: fadeIn .4s ease both;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(.72) translateY(12px); }
+    to   { opacity: 1; transform: scale(1)   translateY(0);    }
+  }
+
+  .node:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 28px 6px color-mix(in srgb, var(--node-color) 55%, transparent),
+                0 0 60px 10px color-mix(in srgb, var(--node-color) 20%, transparent);
+    border-color: var(--node-color);
+    z-index: 20;
+  }
+
+  .node.root-node {
+    cursor: default;
+    border-width: 2px;
+    border-color: var(--accent);
+    box-shadow:
+      0 0 30px 8px rgba(245,200,66,0.3),
+      0 0 80px 20px rgba(245,200,66,0.12),
+      inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+
+  .node-label {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    letter-spacing: .03em;
+    color: #fff;
+    text-align: center;
+    line-height: 1.2;
+    padding: 0 .5rem;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+
+  .node-tag {
+    font-size: .58rem;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    opacity: .8;
+    margin-top: 2px;
+  }
+
+  /* ── Score bar ── */
+  .score-bar {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    border-radius: 0 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px);
+    background: var(--node-color);
+    opacity: .5;
+  }
+
+  /* ── Breadcrumb trail ── */
+  #breadcrumb {
+    padding: .6rem 2.2rem;
+    font-size: .72rem;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    min-height: 2.1rem;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    flex-wrap: wrap;
+    background: rgba(26,14,74,0.6);
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: .06em;
+  }
+  .crumb {
+    cursor: pointer;
+    color: var(--accent);
+    transition: opacity .15s, text-shadow .15s;
+  }
+  .crumb:hover {
+    opacity: .8;
+    text-shadow: 0 0 8px rgba(245,200,66,0.6);
+  }
+  .crumb-sep { color: var(--border); }
+
+  /* ── Loading spinner ── */
+  #loader {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(18,6,58,.75);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #loader.active { display: flex; }
+  .spinner {
+    width: 52px; height: 52px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-right-color: var(--accent2);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    box-shadow: 0 0 20px rgba(245,200,66,0.3);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Empty state ── */
+  #empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    pointer-events: none;
+  }
+  #empty .big-letter {
+    font-family: 'Fredoka One', cursive;
+    font-size: 8rem;
+    color: rgba(78,168,255,0.08);
+    line-height: 1;
+    text-shadow: 0 0 60px rgba(245,200,66,0.15);
+  }
+  #empty p {
+    font-size: .82rem;
+    letter-spacing: .1em;
+    color: var(--muted);
+    font-family: 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+  }
+
+  /* ── TTS controls ── */
+  #ttsToggle {
+    background: rgba(78,168,255,0.08);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: .78rem;
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 600;
+    padding: .45rem .9rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  #ttsToggle:hover { border-color: var(--accent2); color: var(--accent2); }
+  #ttsToggle.active {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(78,168,255,0.15);
+    box-shadow: 0 0 12px rgba(78,168,255,0.25);
+  }
+  #ttsToggle .icon { font-size: 1rem; line-height: 1; }
+
+  .speak-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: #0d0e14;
+    font-size: .7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity .2s, transform .2s;
+    z-index: 30;
+    pointer-events: none;
+  }
+  .root-node:hover .speak-btn,
+  .root-node.speaking .speak-btn {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+  .root-node.speaking .speak-btn {
+    animation: pulse-speak .7s ease infinite alternate;
+  }
+  @keyframes pulse-speak {
+    from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); }
+    to   { box-shadow: 0 0 0 6px transparent; }
+  }
+
+  /* speaking ripple on any node */
+  .node.speaking::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: calc(var(--radius) + 4px);
+    border: 2px solid var(--node-color);
+    animation: ripple-out .6s ease forwards;
+    pointer-events: none;
+  }
+  @keyframes ripple-out {
+    from { opacity: .8; transform: scale(1);    }
+    to   { opacity: 0;  transform: scale(1.18); }
+  }
+
+  /* ── Error toast ── */
+  #toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #2d0f3d;
+    border: 1px solid #7b2d8b;
+    color: #e07bff;
+    padding: .65rem 1.4rem;
+    border-radius: var(--radius);
+    font-size: .82rem;
+    font-family: 'Exo 2', sans-serif;
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    z-index: 300;
+    box-shadow: 0 4px 20px rgba(123,45,139,0.4);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-word">WORD</div>
+    <div class="logo-masters">MASTERS</div>
+    <div class="logo-tagline">Unlock the Power of Words</div>
+  </div>
+  <div class="search-wrap">
+    <button id="ttsToggle" title="Toggle text-to-speech">
+      <span class="icon">🔇</span>
+      <span class="label">TTS off</span>
+    </button>
+    <input id="searchInput" type="text" placeholder="Enter a word…" autocomplete="off" spellcheck="false">
+    <button id="searchBtn">Explore →</button>
+  </div>
+</header>
+
+<div class="legend">
+  <span>Word types:</span>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--col-noun)"></div> Noun</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--col-verb)"></div> Verb</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--col-adj)"></div> Adjective</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--col-adv)"></div> Adverb</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--col-vowel)"></div> Starts with vowel</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--col-unknown)"></div> Other</div>
+  <span style="margin-left:auto">Click any synonym to explore it</span>
+</div>
+
+<div id="breadcrumb"></div>
+
+<div id="stage">
+  <!-- Background light burst matching Word Masters box art -->
+  <svg id="stagebg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.18" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <radialGradient id="burst" cx="50%" cy="55%" r="45%">
+        <stop offset="0%" stop-color="#f5c842" stop-opacity="1"/>
+        <stop offset="30%" stop-color="#4ea8ff" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#12063a" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <g stroke="#f5c842" stroke-width="0.5" opacity="0.5">
+      <line x1="400" y1="330" x2="0"   y2="0"/>
+      <line x1="400" y1="330" x2="100" y2="0"/>
+      <line x1="400" y1="330" x2="200" y2="0"/>
+      <line x1="400" y1="330" x2="300" y2="0"/>
+      <line x1="400" y1="330" x2="400" y2="0"/>
+      <line x1="400" y1="330" x2="500" y2="0"/>
+      <line x1="400" y1="330" x2="600" y2="0"/>
+      <line x1="400" y1="330" x2="700" y2="0"/>
+      <line x1="400" y1="330" x2="800" y2="0"/>
+      <line x1="400" y1="330" x2="800" y2="100"/>
+      <line x1="400" y1="330" x2="800" y2="300"/>
+      <line x1="400" y1="330" x2="800" y2="500"/>
+      <line x1="400" y1="330" x2="800" y2="600"/>
+      <line x1="400" y1="330" x2="600" y2="600"/>
+      <line x1="400" y1="330" x2="400" y2="600"/>
+      <line x1="400" y1="330" x2="200" y2="600"/>
+      <line x1="400" y1="330" x2="0"   y2="600"/>
+      <line x1="400" y1="330" x2="0"   y2="400"/>
+      <line x1="400" y1="330" x2="0"   y2="200"/>
+    </g>
+    <ellipse cx="400" cy="330" rx="320" ry="220" fill="url(#burst)" opacity="0.6"/>
+  </svg>
+  <svg id="connections"></svg>
+  <div id="empty">
+    <div class="big-letter">W</div>
+    <p>Type a word above and press Enter or Explore</p>
+  </div>
+</div>
+
+<div id="loader"><div class="spinner"></div></div>
+<div id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  history: [],   // array of word strings (breadcrumb)
+  currentWord: null,
+  nodes: [],
+};
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const VOWELS = new Set(['a','e','i','o','u']);
+
+function wordColor(word, tags) {
+  // Vowel start takes priority as a visual overlay hint
+  const startsVowel = VOWELS.has(word[0]?.toLowerCase());
+  if (tags.includes('n')) return startsVowel ? 'var(--col-vowel)' : 'var(--col-noun)';
+  if (tags.includes('v')) return 'var(--col-verb)';
+  if (tags.includes('adj')) return 'var(--col-adj)';
+  if (tags.includes('adv')) return 'var(--col-adv)';
+  if (startsVowel) return 'var(--col-vowel)';
+  return 'var(--col-unknown)';
+}
+
+function partOfSpeechLabel(tags) {
+  if (tags.includes('n'))   return 'noun';
+  if (tags.includes('v'))   return 'verb';
+  if (tags.includes('adj')) return 'adj';
+  if (tags.includes('adv')) return 'adv';
+  return '';
+}
+
+// ── API call ───────────────────────────────────────────────────────────────
+async function fetchSynonyms(word) {
+  const res = await fetch(`/api/thesaurus?word=${encodeURIComponent(word)}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// ── Layout ─────────────────────────────────────────────────────────────────
+function computeLayout(synonyms) {
+  const stage = document.getElementById('stage');
+  const W = Math.max(stage.clientWidth, 900);
+  const H = Math.max(stage.clientHeight, 600);
+
+  const NW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--node-w'));
+  const NH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--node-h'));
+
+  // Root node: centre
+  const rootX = W / 2 - NW / 2;
+  const rootY = H / 2 - NH / 2;
+
+  const positions = [{ x: rootX, y: rootY, isRoot: true }];
+
+  // Arrange synonyms in concentric arcs
+  const count = synonyms.length;
+  const rings = count <= 8 ? 1 : 2;
+
+  if (rings === 1) {
+    const r = Math.min(W, H) * 0.32;
+    for (let i = 0; i < count; i++) {
+      const angle = (2 * Math.PI * i / count) - Math.PI / 2;
+      positions.push({
+        x: rootX + NW / 2 + r * Math.cos(angle) - NW / 2,
+        y: rootY + NH / 2 + r * Math.sin(angle) - NH / 2,
+        isRoot: false
+      });
+    }
+  } else {
+    const ring1Count = Math.ceil(count / 2);
+    const ring2Count = count - ring1Count;
+    const r1 = Math.min(W, H) * 0.22;
+    const r2 = Math.min(W, H) * 0.38;
+
+    for (let i = 0; i < ring1Count; i++) {
+      const angle = (2 * Math.PI * i / ring1Count) - Math.PI / 2;
+      positions.push({
+        x: rootX + NW / 2 + r1 * Math.cos(angle) - NW / 2,
+        y: rootY + NH / 2 + r1 * Math.sin(angle) - NH / 2,
+        isRoot: false
+      });
+    }
+    for (let i = 0; i < ring2Count; i++) {
+      const angle = (2 * Math.PI * i / ring2Count) - Math.PI / 2;
+      positions.push({
+        x: rootX + NW / 2 + r2 * Math.cos(angle) - NW / 2,
+        y: rootY + NH / 2 + r2 * Math.sin(angle) - NH / 2,
+        isRoot: false
+      });
+    }
+  }
+
+  return { positions, stageW: W, stageH: H };
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render(data) {
+  const { word, synonyms } = data;
+  const stage = document.getElementById('stage');
+  const svg = document.getElementById('connections');
+
+  // Clear
+  stage.querySelectorAll('.node').forEach(n => n.remove());
+  svg.innerHTML = '';
+  document.getElementById('empty').style.display = 'none';
+
+  const allWords = [{ word, score: 1, tags: [], isRoot: true }, ...synonyms];
+  const { positions, stageW, stageH } = computeLayout(synonyms);
+
+  // Expand stage if needed
+  const maxX = Math.max(...positions.map(p => p.x)) + 160;
+  const maxY = Math.max(...positions.map(p => p.y)) + 80;
+  stage.style.minHeight = Math.max(maxY + 40, window.innerHeight - 200) + 'px';
+  svg.setAttribute('viewBox', `0 0 ${Math.max(maxX, stageW)} ${Math.max(maxY + 40, stageH)}`);
+
+  const NW = 130, NH = 52;
+  const rootPos = positions[0];
+  const rootCX = rootPos.x + NW / 2;
+  const rootCY = rootPos.y + NH / 2;
+
+  // Draw connections first
+  for (let i = 1; i < allWords.length; i++) {
+    const pos = positions[i];
+    const color = wordColor(allWords[i].word, allWords[i].tags);
+    const cx = pos.x + NW / 2;
+    const cy = pos.y + NH / 2;
+
+    // Bezier curve
+    const mx = (rootCX + cx) / 2;
+    const my = (rootCY + cy) / 2;
+    const cp1x = rootCX + (mx - rootCX) * 0.5;
+    const cp1y = rootCY;
+    const cp2x = cx + (mx - cx) * 0.5;
+    const cp2y = cy;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M ${rootCX} ${rootCY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${cx} ${cy}`);
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('opacity', '0.35');
+    path.style.strokeDasharray = '4 3';
+    svg.appendChild(path);
+
+    // Animate path draw
+    const len = path.getTotalLength ? path.getTotalLength() : 200;
+    path.style.strokeDasharray = len;
+    path.style.strokeDashoffset = len;
+    path.style.transition = `stroke-dashoffset ${0.4 + i * 0.04}s ease`;
+    requestAnimationFrame(() => { path.style.strokeDashoffset = '0'; });
+  }
+
+  // Draw nodes
+  allWords.forEach((w, i) => {
+    const pos = positions[i];
+    const color = w.isRoot
+      ? 'var(--accent)'
+      : wordColor(w.word, w.tags);
+    const posLabel = partOfSpeechLabel(w.tags);
+    const scoreRatio = w.isRoot ? 1 : Math.min(w.score / 60000, 1);
+
+    const node = document.createElement('div');
+    node.className = 'node' + (w.isRoot ? ' root-node' : '');
+    node.style.left = pos.x + 'px';
+    node.style.top  = pos.y + 'px';
+    node.style.setProperty('--node-color', color);
+    node.style.background = `color-mix(in srgb, ${color} 16%, #1a0e4a)`;
+    node.style.animationDelay = (i * 0.04) + 's';
+
+    node.innerHTML = `
+      <div class="node-label">${w.word}</div>
+      ${posLabel ? `<div class="node-tag" style="color:${color}">${posLabel}</div>` : ''}
+      ${!w.isRoot ? `<div class="score-bar" style="width:${Math.max(scoreRatio * 100, 8)}%"></div>` : ''}
+      ${w.isRoot ? `<button class="speak-btn" title="Speak this word" aria-label="Speak">♪</button>` : ''}
+    `;
+
+    if (!w.isRoot) {
+      node.addEventListener('click', () => explore(w.word));
+      node.addEventListener('mouseenter', () => {
+        if (tts.enabled) speakWord(w.word, node);
+      });
+    } else {
+      // speak button on root node
+      requestAnimationFrame(() => {
+        const btn = node.querySelector('.speak-btn');
+        if (btn) btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          speakWord(w.word, node);
+        });
+      });
+    }
+
+    // Tooltip on hover
+    node.title = w.isRoot
+      ? `"${w.word}" — current word`
+      : `Explore synonyms of "${w.word}"${posLabel ? ` (${posLabel})` : ''}`;
+
+    stage.appendChild(node);
+  });
+}
+
+// ── Breadcrumb ─────────────────────────────────────────────────────────────
+function updateBreadcrumb() {
+  const el = document.getElementById('breadcrumb');
+  if (state.history.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = state.history.map((w, i) => {
+    if (i === state.history.length - 1) return `<span style="color:var(--text)">${w}</span>`;
+    return `<span class="crumb" data-idx="${i}">${w}</span><span class="crumb-sep">›</span>`;
+  }).join('');
+
+  el.querySelectorAll('.crumb').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.idx);
+      const word = state.history[idx];
+      state.history = state.history.slice(0, idx);
+      explore(word);
+    });
+  });
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── Main explore function ──────────────────────────────────────────────────
+async function explore(word) {
+  if (!word.trim()) return;
+  word = word.trim().toLowerCase();
+
+  document.getElementById('loader').classList.add('active');
+  document.getElementById('searchInput').value = word;
+
+  try {
+    const data = await fetchSynonyms(word);
+
+    if (!data.synonyms || data.synonyms.length === 0) {
+      showToast(`No synonyms found for "${word}"`);
+      document.getElementById('loader').classList.remove('active');
+      return;
+    }
+
+    state.history.push(word);
+    state.currentWord = word;
+    updateBreadcrumb();
+    render(data);
+
+    // Auto-speak the new root word if TTS is enabled
+    if (tts.enabled) {
+      setTimeout(() => {
+        const rootNode = document.querySelector('.root-node');
+        speakWord(word, rootNode);
+      }, 300);
+    }
+  } catch (err) {
+    showToast(`Error: ${err.message}`);
+  } finally {
+    document.getElementById('loader').classList.remove('active');
+  }
+}
+
+// ── TTS Engine ─────────────────────────────────────────────────────────────
+const tts = {
+  enabled: false,
+  synth: window.speechSynthesis,
+  supported: 'speechSynthesis' in window,
+};
+
+function speakWord(word, nodeEl) {
+  if (!tts.supported) { showToast('TTS not supported in this browser'); return; }
+  tts.synth.cancel();
+
+  const utter = new SpeechSynthesisUtterance(word);
+  utter.rate = 0.88;
+  utter.pitch = 1.05;
+  utter.volume = 1;
+
+  // Try to pick a natural English voice
+  const voices = tts.synth.getVoices();
+  const preferred = voices.find(v =>
+    v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Enhanced'))
+  ) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+  if (preferred) utter.voice = preferred;
+
+  if (nodeEl) {
+    nodeEl.classList.add('speaking');
+    utter.onend = () => nodeEl.classList.remove('speaking');
+    utter.onerror = () => nodeEl.classList.remove('speaking');
+  }
+
+  tts.synth.speak(utter);
+}
+
+function toggleTTS() {
+  tts.enabled = !tts.enabled;
+  const btn = document.getElementById('ttsToggle');
+  btn.querySelector('.icon').textContent  = tts.enabled ? '🔊' : '🔇';
+  btn.querySelector('.label').textContent = tts.enabled ? 'TTS on'  : 'TTS off';
+  btn.classList.toggle('active', tts.enabled);
+  if (!tts.enabled) tts.synth.cancel();
+}
+
+// Pre-load voices (Chrome requires this)
+if ('speechSynthesis' in window) {
+  speechSynthesis.getVoices();
+  speechSynthesis.addEventListener('voiceschanged', () => speechSynthesis.getVoices());
+}
+
+// ── Event listeners ────────────────────────────────────────────────────────
+document.getElementById('ttsToggle').addEventListener('click', toggleTTS);
+
+document.getElementById('searchBtn').addEventListener('click', () => {
+  explore(document.getElementById('searchInput').value);
+});
+
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') explore(e.target.value);
+});
+
+// Redraw on resize
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (state.currentWord) {
+      fetchSynonyms(state.currentWord).then(data => render(data));
+    }
+  }, 300);
+});
+</script>
+</body>
+</html>
