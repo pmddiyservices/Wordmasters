@@ -21,8 +21,7 @@ function fetchThesaurus(word) {
   return new Promise((resolve, reject) => {
     // ml = "means like" (synonyms), rel_syn = related synonyms
     const endpoints = [
-      `https://api.datamuse.com/words?rel_syn=${encodeURIComponent(word)}&md=p&max=1000`,
-      //`https://api.datamuse.com/words?ml=${encodeURIComponent(word)}&md=p&max=1000`
+      `https://api.datamuse.com/words?rel_syn=${encodeURIComponent(word)}&md=pd&max=1000`
     ];
 
     choices.add(word);
@@ -61,7 +60,8 @@ function dedupeAndEnrich(words, originalWord) {
     .map(w => ({
       word: w.word,
       score: w.score || 0,
-      tags: w.tags || []
+      tags: w.tags || [],
+      defs: w.defs || []
     }));
 
     console.log(wordsUpdated);
