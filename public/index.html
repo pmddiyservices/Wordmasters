@@ -25,7 +25,8 @@
     --col-adv:      #d97bff;   /* violet         */
     --col-vowel:    #ff8c42;   /* fiery orange   */
     --col-unknown:  #9988cc;   /* lavender grey  */
-
+    --col-system:   #f5c842;   /* gold           */
+    
     --radius: 12px;
     --node-w: 130px;
     --node-h: 52px;
@@ -170,11 +171,16 @@
   #stage {
     position: relative;
     width: 100%;
-    min-height: calc(100vh - 120px);
+    min-height: calc(100vh - 160px);
     overflow: auto;
+    /* Deep space starfield base */
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 50%, rgba(60,20,120,0.55) 0%, transparent 70%),
+      radial-gradient(ellipse 100% 100% at 50% 50%, #0e0530 0%, #12063a 100%);
   }
 
-  svg#connections {
+  /* Starfield canvas layer */
+  #starfield {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
@@ -182,13 +188,21 @@
     z-index: 0;
   }
 
-  /* ── Nodes ── */
+  svg#connections {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    overflow: visible;
+  }
+
+  /* ── Board-game map nodes ── */
   .node {
     position: absolute;
     width: var(--node-w);
     height: var(--node-h);
-    border-radius: var(--radius);
-    border: 2px solid transparent;
+    border-radius: 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -196,64 +210,130 @@
     cursor: pointer;
     user-select: none;
     z-index: 10;
-    transition: transform .18s cubic-bezier(.34,1.56,.64,1),
-                box-shadow .18s ease,
-                border-color .18s;
-    animation: fadeIn .4s ease both;
+    transition: transform .2s cubic-bezier(.34,1.56,.64,1), filter .2s;
+    animation: nodeAppear .5s cubic-bezier(.34,1.56,.64,1) both;
+
+    /* Ornate panel — dark purple fill with gold border layering */
+    background: linear-gradient(160deg, #2a1260 0%, #1a0a45 60%, #120838 100%);
+    border: none;
+
+    /* Gold border via box-shadow layering to mimic the ornate frame in the image */
+    box-shadow:
+      0 0 0 1px #7a5010,
+      0 0 0 2px #f5c842,
+      0 0 0 3px #7a5010,
+      0 0 12px 2px rgba(245,200,66,0.15),
+      inset 0 1px 0 rgba(255,220,100,0.1),
+      inset 0 -1px 0 rgba(0,0,0,0.4);
   }
 
-  @keyframes fadeIn {
-    from { opacity: 0; transform: scale(.72) translateY(12px); }
-    to   { opacity: 1; transform: scale(1)   translateY(0);    }
+  @keyframes nodeAppear {
+    from { opacity: 0; transform: scale(0.6); filter: brightness(3); }
+    to   { opacity: 1; transform: scale(1);   filter: brightness(1); }
+  }
+
+  /* Corner ornament pseudo-elements */
+  .node::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 5px;
+    border: 1px solid rgba(245,200,66,0.2);
+    pointer-events: none;
   }
 
   .node:hover {
     transform: scale(1.1);
-    box-shadow: 0 0 28px 6px color-mix(in srgb, var(--node-color) 55%, transparent),
-                0 0 60px 10px color-mix(in srgb, var(--node-color) 20%, transparent);
-    border-color: var(--node-color);
+    filter: brightness(1.25);
     z-index: 20;
+    box-shadow:
+      0 0 0 1px #a06818,
+      0 0 0 2px #ffe066,
+      0 0 0 3px #a06818,
+      0 0 25px 8px color-mix(in srgb, var(--node-color) 50%, rgba(245,200,66,0.3)),
+      0 0 60px 15px color-mix(in srgb, var(--node-color) 20%, transparent),
+      inset 0 1px 0 rgba(255,220,100,0.2);
   }
 
+  /* Root node — gold crowned panel */
   .node.root-node {
     cursor: default;
-    border-width: 2px;
-    border-color: var(--accent);
+    width: 150px;
+    height: 60px;
+    background: linear-gradient(160deg, #3d1e00 0%, #2a1200 50%, #1a0800 100%);
     box-shadow:
-      0 0 30px 8px rgba(245,200,66,0.3),
-      0 0 80px 20px rgba(245,200,66,0.12),
-      inset 0 1px 0 rgba(255,255,255,0.15);
+      0 0 0 1px #a06818,
+      0 0 0 3px #f5c842,
+      0 0 0 4px #a06818,
+      0 0 35px 10px rgba(245,200,66,0.4),
+      0 0 80px 25px rgba(245,200,66,0.15),
+      inset 0 1px 0 rgba(255,220,100,0.25),
+      inset 0 -1px 0 rgba(0,0,0,0.5);
+    animation: rootPulse 3s ease-in-out infinite, nodeAppear .5s cubic-bezier(.34,1.56,.64,1) both;
+  }
+
+  @keyframes rootPulse {
+    0%, 100% { box-shadow:
+      0 0 0 1px #a06818, 0 0 0 3px #f5c842, 0 0 0 4px #a06818,
+      0 0 35px 10px rgba(245,200,66,0.35), 0 0 80px 25px rgba(245,200,66,0.12),
+      inset 0 1px 0 rgba(255,220,100,0.25), inset 0 -1px 0 rgba(0,0,0,0.5); }
+    50%  { box-shadow:
+      0 0 0 1px #a06818, 0 0 0 3px #ffe066, 0 0 0 4px #a06818,
+      0 0 50px 16px rgba(245,200,66,0.55), 0 0 100px 35px rgba(245,200,66,0.2),
+      inset 0 1px 0 rgba(255,220,100,0.35), inset 0 -1px 0 rgba(0,0,0,0.5); }
   }
 
   .node-label {
     font-family: 'Fredoka One', cursive;
     font-size: 1rem;
-    letter-spacing: .03em;
+    letter-spacing: .06em;
+    text-transform: uppercase;
     color: #fff;
     text-align: center;
-    line-height: 1.2;
-    padding: 0 .5rem;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    line-height: 1.1;
+    padding: 0 .6rem;
+    text-shadow:
+      0 0 10px rgba(255,255,255,0.4),
+      0 1px 3px rgba(0,0,0,0.8);
+  }
+
+  .root-node .node-label {
+    font-size: 1.1rem;
+    background: linear-gradient(180deg, #ffe88a 0%, #f5c842 50%, #c8860a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 6px rgba(245,200,66,0.8));
   }
 
   .node-tag {
-    font-size: .58rem;
+    font-size: .54rem;
     font-family: 'Rajdhani', sans-serif;
-    letter-spacing: .12em;
+    letter-spacing: .16em;
     text-transform: uppercase;
     font-weight: 600;
-    opacity: .8;
-    margin-top: 2px;
+    margin-top: 1px;
+    opacity: .85;
+  }
+
+  /* Glowing orb connector dot (shown at node centre, rendered in SVG) */
+  .node-orb {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff 0%, var(--node-color) 50%, transparent 100%);
+    box-shadow: 0 0 8px 3px var(--node-color);
+    position: absolute;
+    bottom: -5px; left: 50%; transform: translateX(-50%);
   }
 
   /* ── Score bar ── */
   .score-bar {
     position: absolute;
-    bottom: 0; left: 0;
-    height: 3px;
-    border-radius: 0 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px);
-    background: var(--node-color);
-    opacity: .5;
+    bottom: 0; left: 4px; right: 4px;
+    height: 2px;
+    border-radius: 0 0 4px 4px;
+    background: linear-gradient(90deg, transparent, var(--node-color), transparent);
+    opacity: .6;
   }
 
   /* ── Breadcrumb trail ── */
@@ -457,38 +537,7 @@
 <div id="breadcrumb"></div>
 
 <div id="stage">
-  <!-- Background light burst matching Word Masters box art -->
-  <svg id="stagebg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.18" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
-    <defs>
-      <radialGradient id="burst" cx="50%" cy="55%" r="45%">
-        <stop offset="0%" stop-color="#f5c842" stop-opacity="1"/>
-        <stop offset="30%" stop-color="#4ea8ff" stop-opacity="0.4"/>
-        <stop offset="100%" stop-color="#12063a" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
-    <g stroke="#f5c842" stroke-width="0.5" opacity="0.5">
-      <line x1="400" y1="330" x2="0"   y2="0"/>
-      <line x1="400" y1="330" x2="100" y2="0"/>
-      <line x1="400" y1="330" x2="200" y2="0"/>
-      <line x1="400" y1="330" x2="300" y2="0"/>
-      <line x1="400" y1="330" x2="400" y2="0"/>
-      <line x1="400" y1="330" x2="500" y2="0"/>
-      <line x1="400" y1="330" x2="600" y2="0"/>
-      <line x1="400" y1="330" x2="700" y2="0"/>
-      <line x1="400" y1="330" x2="800" y2="0"/>
-      <line x1="400" y1="330" x2="800" y2="100"/>
-      <line x1="400" y1="330" x2="800" y2="300"/>
-      <line x1="400" y1="330" x2="800" y2="500"/>
-      <line x1="400" y1="330" x2="800" y2="600"/>
-      <line x1="400" y1="330" x2="600" y2="600"/>
-      <line x1="400" y1="330" x2="400" y2="600"/>
-      <line x1="400" y1="330" x2="200" y2="600"/>
-      <line x1="400" y1="330" x2="0"   y2="600"/>
-      <line x1="400" y1="330" x2="0"   y2="400"/>
-      <line x1="400" y1="330" x2="0"   y2="200"/>
-    </g>
-    <ellipse cx="400" cy="330" rx="320" ry="220" fill="url(#burst)" opacity="0.6"/>
-  </svg>
+  <canvas id="starfield"></canvas>
   <svg id="connections"></svg>
   <div id="empty">
     <div class="big-letter">W</div>
@@ -510,9 +559,10 @@ const state = {
 // ── Helpers ────────────────────────────────────────────────────────────────
 const VOWELS = new Set(['a','e','i','o','u']);
 
-function wordColor(word, tags) {
+function wordColor(word, tags, score) {
   // Vowel start takes priority as a visual overlay hint
   const startsVowel = VOWELS.has(word[0]?.toLowerCase());
+  if (score == 0) return 'var(--col-system)';
   if (tags.includes('n')) return startsVowel ? 'var(--col-vowel)' : 'var(--col-noun)';
   if (tags.includes('v')) return 'var(--col-verb)';
   if (tags.includes('adj')) return 'var(--col-adj)';
@@ -617,44 +667,120 @@ function render(data) {
   const rootCX = rootPos.x + NW / 2;
   const rootCY = rootPos.y + NH / 2;
 
-  // Draw connections first
+  // Draw connections first — board-game glowing path style
   for (let i = 1; i < allWords.length; i++) {
     const pos = positions[i];
-    const color = wordColor(allWords[i].word, allWords[i].tags);
+    const color = wordColor(allWords[i].word, allWords[i].tags, allWords[i].score);
     const cx = pos.x + NW / 2;
     const cy = pos.y + NH / 2;
 
-    // Bezier curve
+    const defs = svg.querySelector('defs') || svg.insertBefore(
+      document.createElementNS('http://www.w3.org/2000/svg','defs'), svg.firstChild
+    );
+
+    // Gradient line from gold root to node colour
+    const gradId = `grad${i}`;
+    const grad = document.createElementNS('http://www.w3.org/2000/svg','linearGradient');
+    grad.setAttribute('id', gradId);
+    grad.setAttribute('gradientUnits','userSpaceOnUse');
+    grad.setAttribute('x1', rootCX); grad.setAttribute('y1', rootCY);
+    grad.setAttribute('x2', cx);     grad.setAttribute('y2', cy);
+    grad.innerHTML = `
+      <stop offset="0%"   stop-color="#f5c842" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0.7"/>
+    `;
+    defs.appendChild(grad);
+
+    // Glow blur filter
+    const filterId = `glow${i}`;
+    if (!document.getElementById(filterId)) {
+      const filt = document.createElementNS('http://www.w3.org/2000/svg','filter');
+      filt.setAttribute('id', filterId);
+      filt.setAttribute('x','-50%'); filt.setAttribute('y','-50%');
+      filt.setAttribute('width','200%'); filt.setAttribute('height','200%');
+      filt.innerHTML = `<feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>`;
+      defs.appendChild(filt);
+    }
+
+    // Bezier curve — thick glow layer + sharp line on top
     const mx = (rootCX + cx) / 2;
-    const my = (rootCY + cy) / 2;
-    const cp1x = rootCX + (mx - rootCX) * 0.5;
-    const cp1y = rootCY;
-    const cp2x = cx + (mx - cx) * 0.5;
-    const cp2y = cy;
+    const cp1x = rootCX + (mx - rootCX) * 0.4;
+    const cp1y = rootCY + (cy - rootCY) * 0.1;
+    const cp2x = cx - (cx - mx) * 0.4;
+    const cp2y = cy - (cy - rootCY) * 0.1;
+    const d = `M ${rootCX} ${rootCY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${cx} ${cy}`;
 
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', `M ${rootCX} ${rootCY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${cx} ${cy}`);
-    path.setAttribute('stroke', color);
-    path.setAttribute('stroke-width', '1.5');
-    path.setAttribute('fill', 'none');
-    path.setAttribute('opacity', '0.35');
-    path.style.strokeDasharray = '4 3';
-    svg.appendChild(path);
+    // Outer glow
+    const glowPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+    glowPath.setAttribute('d', d);
+    glowPath.setAttribute('stroke', `url(#${gradId})`);
+    glowPath.setAttribute('stroke-width', '5');
+    glowPath.setAttribute('fill', 'none');
+    glowPath.setAttribute('opacity', '0.3');
+    glowPath.setAttribute('filter', `url(#${filterId})`);
+    svg.appendChild(glowPath);
 
-    // Animate path draw
-    const len = path.getTotalLength ? path.getTotalLength() : 200;
-    path.style.strokeDasharray = len;
-    path.style.strokeDashoffset = len;
-    path.style.transition = `stroke-dashoffset ${0.4 + i * 0.04}s ease`;
-    requestAnimationFrame(() => { path.style.strokeDashoffset = '0'; });
+    // Sharp line
+    const linePath = document.createElementNS('http://www.w3.org/2000/svg','path');
+    linePath.setAttribute('d', d);
+    linePath.setAttribute('stroke', `url(#${gradId})`);
+    linePath.setAttribute('stroke-width', '1.5');
+    linePath.setAttribute('fill', 'none');
+    linePath.setAttribute('opacity', '0.85');
+    svg.appendChild(linePath);
+
+    // Animate draw
+    const len = linePath.getTotalLength ? linePath.getTotalLength() : 300;
+    [glowPath, linePath].forEach(p => {
+      p.style.strokeDasharray = len;
+      p.style.strokeDashoffset = len;
+      p.style.transition = `stroke-dashoffset ${0.5 + i * 0.04}s cubic-bezier(0.4,0,0.2,1)`;
+    });
+    requestAnimationFrame(() => {
+      glowPath.style.strokeDashoffset = '0';
+      linePath.style.strokeDashoffset = '0';
+    });
+
+    // Endpoint orb at synonym node
+    const orbOuter = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    orbOuter.setAttribute('cx', cx); orbOuter.setAttribute('cy', cy);
+    orbOuter.setAttribute('r', '7');
+    orbOuter.setAttribute('fill', color);
+    orbOuter.setAttribute('opacity', '0.25');
+    svg.appendChild(orbOuter);
+
+    const orbInner = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    orbInner.setAttribute('cx', cx); orbInner.setAttribute('cy', cy);
+    orbInner.setAttribute('r', '3.5');
+    orbInner.setAttribute('fill', '#fff');
+    orbInner.setAttribute('opacity', '0.9');
+    orbInner.setAttribute('filter', `url(#${filterId})`);
+    svg.appendChild(orbInner);
   }
+
+  // Central root orb (gold, larger)
+  const rootOrb = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  rootOrb.setAttribute('cx', rootCX); rootOrb.setAttribute('cy', rootCY);
+  rootOrb.setAttribute('r', '14');
+  rootOrb.setAttribute('fill', '#f5c842');
+  rootOrb.setAttribute('opacity', '0.18');
+  svg.appendChild(rootOrb);
+  const rootOrbCore = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  rootOrbCore.setAttribute('cx', rootCX); rootOrbCore.setAttribute('cy', rootCY);
+  rootOrbCore.setAttribute('r', '5');
+  rootOrbCore.setAttribute('fill', '#ffe066');
+  rootOrbCore.setAttribute('opacity', '0.9');
+  svg.appendChild(rootOrbCore);
 
   // Draw nodes
   allWords.forEach((w, i) => {
     const pos = positions[i];
     const color = w.isRoot
       ? 'var(--accent)'
-      : wordColor(w.word, w.tags);
+      : wordColor(w.word, w.tags, w.score);
+    const textColor = w.isRoot
+      ? 'var(--accent)'
+      : w.score < 0 ? 'var(--col-system)' : 'var(--text)';
     const posLabel = partOfSpeechLabel(w.tags);
     const scoreRatio = w.isRoot ? 1 : Math.min(w.score / 60000, 1);
 
@@ -663,11 +789,10 @@ function render(data) {
     node.style.left = pos.x + 'px';
     node.style.top  = pos.y + 'px';
     node.style.setProperty('--node-color', color);
-    node.style.background = `color-mix(in srgb, ${color} 16%, #1a0e4a)`;
-    node.style.animationDelay = (i * 0.04) + 's';
+    node.style.animationDelay = (i * 0.05) + 's';
 
     node.innerHTML = `
-      <div class="node-label">${w.word}</div>
+      <div class="node-label" style="color:${textColor}">${w.word}</div>
       ${posLabel ? `<div class="node-tag" style="color:${color}">${posLabel}</div>` : ''}
       ${!w.isRoot ? `<div class="score-bar" style="width:${Math.max(scoreRatio * 100, 8)}%"></div>` : ''}
       ${w.isRoot ? `<button class="speak-btn" title="Speak this word" aria-label="Speak">♪</button>` : ''}
@@ -688,8 +813,6 @@ function render(data) {
         });
       });
     }
-
-    console.log(w);
 
     // Tooltip on hover
     node.title = w.isRoot
@@ -809,6 +932,67 @@ if ('speechSynthesis' in window) {
   speechSynthesis.getVoices();
   speechSynthesis.addEventListener('voiceschanged', () => speechSynthesis.getVoices());
 }
+
+// ── Starfield background ───────────────────────────────────────────────────
+function initStarfield() {
+  const canvas = document.getElementById('starfield');
+  if (!canvas) return;
+  const stage = document.getElementById('stage');
+  canvas.width  = stage.offsetWidth  || window.innerWidth;
+  canvas.height = stage.offsetHeight || window.innerHeight;
+  const ctx = canvas.getContext('2d');
+
+  // Stars
+  const stars = Array.from({ length: 200 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 1.4 + 0.2,
+    o: Math.random() * 0.7 + 0.15,
+    flicker: Math.random() * Math.PI * 2
+  }));
+
+  // Nebula clouds
+  const nebulae = [
+    { x: canvas.width * 0.3,  y: canvas.height * 0.4, rx: 180, ry: 120, col: 'rgba(80,30,180,0.12)' },
+    { x: canvas.width * 0.72, y: canvas.height * 0.6, rx: 140, ry: 100, col: 'rgba(200,100,255,0.07)' },
+    { x: canvas.width * 0.5,  y: canvas.height * 0.5, rx: 300, ry: 200, col: 'rgba(245,200,66,0.04)'  },
+  ];
+
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Nebulae
+    nebulae.forEach(n => {
+      const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, Math.max(n.rx, n.ry));
+      g.addColorStop(0, n.col);
+      g.addColorStop(1, 'transparent');
+      ctx.save();
+      ctx.scale(n.rx / Math.max(n.rx, n.ry), n.ry / Math.max(n.rx, n.ry));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(n.x / (n.rx / Math.max(n.rx, n.ry)), n.y / (n.ry / Math.max(n.rx, n.ry)), Math.max(n.rx, n.ry), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // Stars with flicker
+    stars.forEach(s => {
+      const flicker = 0.85 + 0.15 * Math.sin(s.flicker + frame * 0.02);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${s.o * flicker})`;
+      ctx.fill();
+    });
+
+    frame++;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// Initialise after DOM ready
+setTimeout(initStarfield, 50);
 
 // ── Event listeners ────────────────────────────────────────────────────────
 document.getElementById('ttsToggle').addEventListener('click', toggleTTS);

@@ -21,7 +21,7 @@ function fetchThesaurus(word) {
   return new Promise((resolve, reject) => {
     // ml = "means like" (synonyms), rel_syn = related synonyms
     const endpoints = [
-      `https://api.datamuse.com/words?rel_syn=${encodeURIComponent(word)}&md=pd&max=1000`
+      `https://api.datamuse.com/words?rel_syn=${encodeURIComponent(word)}&md=p&max=1000`
     ];
 
     choices.add(word);
@@ -52,7 +52,7 @@ function fetchThesaurus(word) {
 function dedupeAndEnrich(words, originalWord) {
   const wordsUpdated = words
     .filter(w => {
-      if (!w.word || choices.has(w.word.toLowerCase()) || w.word.includes(" ")) return false;
+      if (!w.word || choices.has(w.word.toLowerCase()) || w.word.includes(" ") || w.word.includes("-")) return false;
       return true;
     })
     .sort((a, b) => (b.score || 0) - (a.score || 0))
@@ -61,11 +61,16 @@ function dedupeAndEnrich(words, originalWord) {
       word: w.word,
       score: w.score || 0,
       tags: w.tags || [],
-      defs: w.defs || []
+      defs: w.defs || [],
+      type: 'result'
     }));
 
+    wordsUpdated.push({word: 'chance', score:-1,tags:[],defs:[],type:'chance'})
+    wordsUpdated.push({word: 'challenge', score:-1,tags:[],defs:[],type:'challenge'})
+    wordsUpdated.push({word: 'opportunity', score:-1,tags:[],defs:[],type:'opportunity'})
+
     console.log(wordsUpdated);
-    
+
     return wordsUpdated;
 }
 
